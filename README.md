@@ -48,20 +48,29 @@ The Docker image uses a multi-stage build and runs as a non-root user.
    | `DOCKERHUB_TOKEN` | Your Docker Hub access token (not your password) |
 
 4. Push this project to the `main` branch of your GitHub repository.
-   The workflow tests the service, builds the image, and pushes both tags:
-   - `YOUR_USERNAME/k3d-microservice:latest`
+   The workflow tests the service, builds the image, and pushes this tag:
    - `YOUR_USERNAME/k3d-microservice:<full-commit-sha>`
 
 You can also run it manually from **Actions → Build and push to Docker Hub →
 Run workflow**. To use another Docker Hub repository name, change
-`k3d-microservice` in the workflow's two `tags` entries.
+`k3d-microservice` in the workflow's `tags` entry.
+
+The workflow uses the self-hosted `k3d-gha-runners` scale set. Enable
+`containerMode.type: dind` in its ARC Helm values so Docker Buildx can connect
+to a Docker daemon. After changing the values, sync the runner scale set in
+Argo CD and wait for replacement runner pods before rerunning the workflow.
+
+Buildx uses `driver-opts: network=host` so its BuildKit container shares the
+runner pod's network instead of using Docker's nested bridge. This avoids
+registry TLS timeouts caused by the nested bridge's larger MTU in k3d.
+Here, "host" means the Docker-in-Docker pod network, not the Kubernetes node.
 
 Run the published image:
 
 ```sh
-docker run --rm -p 8080:8080 YOUR_USERNAME/k3d-microservice:latest
+docker run --rm -p 8080:8080 YOUR_USERNAME/k3d-microservice:COMMIT_SHA
 ```
 
-The workflow publishes for Linux AMD64 (standard GitHub-hosted Ubuntu runners).
-On an ARM-based machine, add `--platform linux/amd64` to the run command;
-Docker must support AMD64 emulation.
+Replace `COMMIT_SHA` with the full commit SHA from the successful workflow run.
+The image targets the runner's native architecture. When running it on a different
+architecture, use Docker's `--platform` option with appropriate emulation support.
