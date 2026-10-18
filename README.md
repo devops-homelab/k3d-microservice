@@ -46,10 +46,23 @@ The Docker image uses a multi-stage build and runs as a non-root user.
    | --- | --- |
    | `DOCKERHUB_USERNAME` | Your Docker Hub username |
    | `DOCKERHUB_TOKEN` | Your Docker Hub access token (not your password) |
+   | `GITOPS_TOKEN` | GitHub token with Contents: Read and write access to `devops-homelab/k3d-gitops` |
 
 4. Push this project to the `main` branch of your GitHub repository.
    The workflow tests the service, builds the image, and pushes this tag:
    - `YOUR_USERNAME/k3d-microservice:<full-commit-sha>`
+
+After publishing successfully from `main`, the `deploy` job updates only
+`image.tag` in `charts/microservices/dev/values.yaml` on the GitOps repository's
+`main` branch and commits and pushes the change. Argo CD then syncs the new image.
+No deployment commit is created if the tag is already current. Workflow runs
+are serialized to avoid concurrent deployments from this workflow.
+
+For `GITOPS_TOKEN`, use a fine-grained personal access token scoped to the GitOps
+repository with **Contents: Read and write** (and organization approval if required).
+The default `GITHUB_TOKEN` cannot write to another repository. The token's owner
+must have write access, and branch rules must permit direct pushes to `main`;
+otherwise use a pull-request-based deployment flow instead.
 
 You can also run it manually from **Actions → Build and push to Docker Hub →
 Run workflow**. To use another Docker Hub repository name, change

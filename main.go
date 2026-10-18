@@ -14,7 +14,7 @@ func handler() http.Handler {
 	})
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte("{\"status\":\"ok\"}\n"))
+		_, _ = w.Write([]byte("{\"status\":\"ok!!\"}\n"))
 	})
 	return mux
 }

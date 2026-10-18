@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docker-publish-dev
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: k3d-gha-runners
@@ -43,3 +47,42 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/k3d-microservice:${{ github.sha }}
+
+  deploy:
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: k3d-gha-runners
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+        with:
+          repository: devops-homelab/k3d-gitops
+          ref: main
+          token: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Update dev image tag
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          values_file=charts/microservices/dev/values.yaml
+          if [[ $(grep -c '^  tag:' "$values_file") != 1 ]]; then
+            echo "::error::Expected exactly one image tag in $values_file"
+            exit 1
+          fi
+          temporary_file=$(mktemp)
+          trap 'rm -f "$temporary_file"' EXIT
+          sed -E "s/^  tag:.*/  tag: \"$IMAGE_TAG\"/" "$values_file" > "$temporary_file"
+          cat "$temporary_file" > "$values_file"
+
+          if git diff --quiet -- "$values_file"; then
+            echo "Dev already uses image tag $IMAGE_TAG"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$values_file"
+          git commit -m "deploy(dev): update k3d-microservice to $IMAGE_TAG" \
+            -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin HEAD:main
