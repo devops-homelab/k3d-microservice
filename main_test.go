@@ -14,7 +14,7 @@ func TestHandler(t *testing.T) {
 		status int
 		body   string
 	}{
-		{"greeting", http.MethodGet, "/", http.StatusOK, "{\"message\":\"Hello from k3d-microservice!!\"}\n"},
+		{"greeting", http.MethodGet, "/", http.StatusOK, "{\"message\":\"Hello SLIIT!\"}\n"},
 		{"health", http.MethodGet, "/health", http.StatusOK, "{\"status\":\"ok!!\"}\n"},
 		{"not found", http.MethodGet, "/missing", http.StatusNotFound, ""},
 		{"unsupported method", http.MethodPost, "/", http.StatusMethodNotAllowed, ""},
