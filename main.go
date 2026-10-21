@@ -10,7 +10,7 @@ func handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte("{\"message\":\"Hello from k3d-microservice!!\"}\n"))
+		_, _ = w.Write([]byte("{\"message\":\"Hello SLIIT!\"}\n"))
 	})
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
